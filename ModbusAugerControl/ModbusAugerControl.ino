@@ -19,7 +19,7 @@
 #endif
 #include "password.h"
 #include <ModbusIP_ESP8266.h>
-#include <Stepper.h>
+#include <AccelStepper.h>
 
 const int stepsPerRevAuger = 800; 
 const int stepsPerRevNozzle = 400;
@@ -27,7 +27,7 @@ const int stepsPerRevNozzle = 400;
 //Modbus Registers Offsets
 const int LED_COIL = 100;
 //Used Pins
-const int ledPin = 0; //GPIO0
+const int ledPin = 2; //GPIO2
 
 //ModbusIP object
 ModbusIP mb;
@@ -38,8 +38,10 @@ int augerSpeed = 0;
 int nozzleVal = 0;
 int nozzlePos = 0;
 
+int pos = 1000;
 
-Stepper augerStepper(stepsPerRevAuger, 1, 3, 5, 5);
+// Define a stepper and the pins it will use
+AccelStepper stepper(AccelStepper::DRIVER, 0, 4);
 
 void setup() {
   Serial.begin(115200);
@@ -71,7 +73,7 @@ void loop() {
 
   if (augerVal != mb.Hreg(AUGER_REG)) {
     augerVal = mb.Hreg(AUGER_REG);
-    augerSpeed = map(augerVal, 0, 1023, 0, 100);
+    augerSpeed = map(augerVal, 0, 5000, 0, 100);
     Serial.println("set Auger speed to " + augerSpeed);
   }
   if (nozzlePos != mb.Hreg(NOZZLE_REG)) {
@@ -81,11 +83,18 @@ void loop() {
 
   // move auger
   if (augerSpeed > 0) {
-    augerStepper.setSpeed(augerSpeed);
-    // step 1/100 of a revolution:
-    augerStepper.step(stepsPerRevAuger / 100);
+    stepper.setMaxSpeed(augerSpeed);
+
   }
   
+  if (stepper.distanceToGo() == 0)
+  {
+    delay(500);
+    pos = -pos;
+    stepper.moveTo(pos);
+  }
+
+  stepper.run();
   digitalWrite(ledPin, mb.Coil(LED_COIL));
 
   delay(10);
