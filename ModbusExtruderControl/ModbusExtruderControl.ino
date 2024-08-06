@@ -21,27 +21,23 @@
 #include <ModbusIP_ESP8266.h>
 #include <AccelStepper.h>
 
-const int stepsPerRevAuger = 800; 
-const int stepsPerRevNozzle = 400;
-
 //Modbus Registers Offsets
 const int LED_COIL = 100;
 //Used Pins
-const int ledPin = 2; //GPIO2
+const int LED_PIN = 2; // GPIO2 = D4
+const int STEP_PIN = 5; // GPIO 5 = D1
+const int DIR_PIN = 4;  // GPIO 4 = D2
 
 //ModbusIP object
 ModbusIP mb;
-int AUGER_REG = 101; // register for Auger stepper
-int NOZZLE_REG = 102; // register for Nozzle stepper
-int augerVal = 0;
-int augerSpeed = 0;
-int nozzleVal = 0;
-int nozzlePos = 0;
+const int EXTRUDER_REG = 101; // register for extruder stepper
 
-int pos = 1000;
+int extruderAccel = 1000;
+int maxSpeed = 1000;
+int extruderGoTo = 0;
 
-// Define a stepper and the pins it will use
-AccelStepper stepper(AccelStepper::DRIVER, 0, 4);
+// Define a stepper motor and the pins it will use
+AccelStepper extruder(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
 
 void setup() {
   Serial.begin(115200);
@@ -60,43 +56,28 @@ void setup() {
 
   mb.server();
 
-  pinMode(ledPin, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
   mb.addCoil(LED_COIL);
 
-  mb.addHreg(AUGER_REG);
-  mb.addHreg(NOZZLE_REG);
+  mb.addHreg(EXTRUDER_REG);
+
+  extruder.setMaxSpeed(maxSpeed);
+  extruder.setAcceleration(extruderAccel);
+  extruder.setCurrentPosition(0);
+  extruder.moveTo(10000);
 }
  
 void loop() {
   //Call once inside loop()
   mb.task();
 
-  if (augerVal != mb.Hreg(AUGER_REG)) {
-    augerVal = mb.Hreg(AUGER_REG);
+  if (extruderGoTo != mb.Hreg(EXTRUDER_REG)) {
+    extruderGoTo = mb.Hreg(EXTRUDER_REG);
     //augerSpeed = map(augerVal, 0, 100, 0, 100);
-    Serial.println(augerVal);
+    Serial.println(extruderGoTo);
+    extruder.moveTo(extruderGoTo);
   }
+  extruder.run();
 
-  if (nozzlePos != mb.Hreg(NOZZLE_REG)) {
-    nozzlePos = mb.Hreg(NOZZLE_REG);
-    Serial.println("set nozzle orientation to " + nozzlePos);
-  }
-
-  // move auger
-  if (augerSpeed > 0) {
-    stepper.setMaxSpeed(augerSpeed);
-
-  }
-  
-  if (stepper.distanceToGo() == 0)
-  {
-    delay(500);
-    pos = -pos;
-    stepper.moveTo(pos);
-  }
-
-  stepper.run();
-  digitalWrite(ledPin, mb.Coil(LED_COIL));
-
-  delay(10);
+  digitalWrite(LED_PIN, mb.Coil(LED_COIL));
 }
