@@ -22,7 +22,7 @@ const int LED_COIL = 100;
 const int LED_PIN = 2; // GPIO2 = D4
 const int STEP_PIN = 5; // GPIO 5 = D1
 const int DIR_PIN = 4;  // GPIO 4 = D2
-const int MAX_SPEED_UPPER = 1000; // upper bound for max speed
+const int MAX_SPEED_UPPER = 5000; // upper bound for max speed
 const int MAX_SPEED_LOWER = 500; // lower bound for max speed
 const int STEP_FACTOR = 3;
 
