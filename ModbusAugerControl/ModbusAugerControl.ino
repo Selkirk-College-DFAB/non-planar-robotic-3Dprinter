@@ -3,7 +3,7 @@
   Control a Led on GPIO0 pin using Write Single Coil Modbus Function 
   Send two values over Input Register using Ireg()
   Receives two values and display in terminal over Holding Register using Hreg()
-  Original library
+  Original lib          rary
   Copyright by André Sarmento Barbosa
   http://github.com/andresarmento/modbus-arduino
 
@@ -25,7 +25,7 @@ const int stepsPerRevAuger = 800;
 const int stepsPerRevNozzle = 400;
 const int AUGER_STEP_PIN = 16;
 const int AUGER_DIR_PIN = 17;
-const int NOZZLE_STEP_PIN = 12;
+const int NOZZLE_STEP_PIN = 27;
 const int NOZZLE_DIR_PIN = 14;
 
 const int AUGER_REG = 101; // register for Auger Stepper Position
