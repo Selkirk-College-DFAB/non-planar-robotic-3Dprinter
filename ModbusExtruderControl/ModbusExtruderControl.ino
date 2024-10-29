@@ -23,16 +23,13 @@ const int STEP_PIN = 16;
 const int DIR_PIN = 17;
 const int MAX_SPEED_UPPER = 5000; // upper bound for max speed
 const int MAX_SPEED_LOWER = 500; // lower bound for max speed
-const int STEP_FACTOR = 3;
-
-unsigned long previousMillis = 0;
-const long interval = 400; // Interval to read analog value in milliseconds
+const int STEP_FACTOR = 30;
 
 //ModbusIP object
 ModbusIP mb;
 const int EXTRUDER_REG = 110; // register for extruder stepper
 const int EXTRUDER_SPEED_REG = 111;
-int extruderAccel = 500;
+int extruderAccel = 1000;
 int extruderSpeed = 1000;
 int extruderGoTo = 0;
 
@@ -61,11 +58,10 @@ void setup() {
 
   mb.addHreg(EXTRUDER_REG);
   mb.addHreg(EXTRUDER_SPEED_REG);
-
+  extruder.setPinsInverted(true, false, false);
   extruder.setMaxSpeed(extruderSpeed);
   extruder.setAcceleration(extruderAccel);
   extruder.setCurrentPosition(0);
-  extruder.moveTo(20000);
 }
  
 void loop() {
