@@ -1,4 +1,3 @@
 password.h
 .DS_Store
-.rhl
-
+*.rhl
