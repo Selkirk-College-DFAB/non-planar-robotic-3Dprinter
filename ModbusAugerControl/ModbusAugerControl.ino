@@ -21,8 +21,6 @@
 #include <ModbusIP_ESP8266.h>
 #include <AccelStepper.h>
 
-const int stepsPerRevAuger = 800; 
-const int stepsPerRevNozzle = 400;
 const int AUGER_STEP_PIN = 16;
 const int AUGER_DIR_PIN = 17;
 const int NOZZLE_STEP_PIN = 27;
@@ -84,7 +82,7 @@ void setup() {
   nozzleStepper.setMaxSpeed(1000);
   nozzleStepper.setAcceleration(500);
   nozzleStepper.setCurrentPosition(0);
-  nozzleStepper.moveTo(20000);
+  nozzleStepper.moveTo(50000);
 }
  
 void loop() {
@@ -99,11 +97,16 @@ void loop() {
     Serial.println(augerSpeed);
   }
 
-  if (augerPos != mb.Hreg(AUGER_REG)) {
+  // when auger register is set to 0 run the auger continously at current speed. Else follow positioning mode
+  if (mb.Hreg(AUGER_REG) == 0) {
+    augerStepper.setSpeed(augerSpeed);
+    augerStepper.runSpeed();
+  } else if (augerPos != mb.Hreg(AUGER_REG)) {
     augerPos = mb.Hreg(AUGER_REG);
     Serial.print("Moving auger: ");
     augerStepper.moveTo(augerPos);
     Serial.println(augerPos);
+    augerStepper.run();
   }
 
   if (nozzlePos != mb.Hreg(NOZZLE_REG)) {
@@ -112,8 +115,6 @@ void loop() {
     nozzleStepper.moveTo(nozzlePos);
     Serial.println(nozzlePos);
   }
-  
-  augerStepper.run();
   nozzleStepper.run();
 
   digitalWrite(ledPin, mb.Coil(LED_COIL));

@@ -77,6 +77,7 @@ void loop() {
 
   // if register is set to 0 keep running the motor at current speed. Else use positioning system
   if (mb.Hreg(EXTRUDER_REG) == 0) {
+    extruder.setSpeed(extruderSpeed);
     extruder.runSpeed();
   } else if (extruderGoTo != mb.Hreg(EXTRUDER_REG)) {
     Serial.print("Moving extruder: ");
