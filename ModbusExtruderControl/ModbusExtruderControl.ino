@@ -23,7 +23,7 @@ const int STEP_PIN = 16;
 const int DIR_PIN = 17;
 const int MAX_SPEED_UPPER = 5000; // upper bound for max speed
 const int MAX_SPEED_LOWER = 500; // lower bound for max speed
-const int STEP_FACTOR = 30;
+const int STEP_FACTOR = 3000;
 
 //ModbusIP object
 ModbusIP mb;
@@ -75,14 +75,16 @@ void loop() {
     Serial.println(extruderSpeed);
   }
 
-  if (extruderGoTo != mb.Hreg(EXTRUDER_REG)) {
+  // if register is set to 0 keep running the motor at current speed. Else use positioning system
+  if (mb.Hreg(EXTRUDER_REG) == 0) {
+    extruder.runSpeed();
+  } else if (extruderGoTo != mb.Hreg(EXTRUDER_REG)) {
     Serial.print("Moving extruder: ");
     extruderGoTo = mb.Hreg(EXTRUDER_REG);
     extruder.moveTo(extruderGoTo * STEP_FACTOR);
     Serial.println(extruderGoTo);
+    extruder.run();
   }
-
-  extruder.run();
 
   digitalWrite(LED_PIN, mb.Coil(LED_COIL));
 }
