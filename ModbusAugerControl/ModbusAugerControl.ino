@@ -29,6 +29,7 @@ const int NOZZLE_DIR_PIN = 14;
 const int AUGER_REG = 101; // register for Auger Stepper Position
 const int NOZZLE_REG = 102; // register for Nozzle Stepper Position
 const int AUGER_SPEED_REG = 103; // register for Auger Stepper Max Speed
+const int NOZZLE_SPEED_REG = 104; // Nozzle speed
 
 //Modbus Registers Offsets
 const int LED_COIL = 100;
@@ -39,14 +40,15 @@ const int ledPin = 2; //GPIO2
 ModbusIP mb;
 
 int augerPos = 0;
-int augerSpeed = 500;
+int augerSpeed = 5000;
 int nozzlePos = 0;
+int nozzleSpeed = 5000;
+
+// Define Nozzle Stepper and the pins it will use
+AccelStepper nozzleStepper(AccelStepper::DRIVER, AUGER_STEP_PIN, AUGER_DIR_PIN);
 
 // Define Auger Stepper and the pins it will use
-AccelStepper augerStepper(AccelStepper::DRIVER, AUGER_STEP_PIN, AUGER_DIR_PIN);
-
-// Define Auger Stepper and the pins it will use
-AccelStepper nozzleStepper(AccelStepper::DRIVER, NOZZLE_STEP_PIN, NOZZLE_DIR_PIN);
+AccelStepper augerStepper(AccelStepper::DRIVER, NOZZLE_STEP_PIN, NOZZLE_DIR_PIN);
 
 void setup() {
   Serial.begin(115200);
@@ -71,18 +73,22 @@ void setup() {
   mb.addHreg(AUGER_REG);
   mb.addHreg(NOZZLE_REG);
   mb.addHreg(AUGER_SPEED_REG);
+  mb.addHreg(NOZZLE_SPEED_REG);
 
   Serial.println("Testing Auger Stepper");
-  augerStepper.setMaxSpeed(1000);
-  augerStepper.setAcceleration(500);
+  augerStepper.setMaxSpeed(5000);
+  augerStepper.setAcceleration(1000);
   augerStepper.setCurrentPosition(0);
   augerStepper.moveTo(50000);
 
   Serial.println("Testing Nozzle Stepper");
-  nozzleStepper.setMaxSpeed(1000);
-  nozzleStepper.setAcceleration(500);
+  nozzleStepper.setMaxSpeed(2500);
+  nozzleStepper.setAcceleration(1000);
   nozzleStepper.setCurrentPosition(0);
   nozzleStepper.moveTo(50000);
+
+  augerStepper.run();
+  nozzleStepper.run();
 }
  
 void loop() {
@@ -97,9 +103,17 @@ void loop() {
     Serial.println(augerSpeed);
   }
 
+  //set nozzle speed
+  if (nozzleSpeed != mb.Hreg(NOZZLE_SPEED_REG)) {
+    nozzleSpeed = mb.Hreg(NOZZLE_SPEED_REG);
+    Serial.print("Setting nozzle speed");
+    nozzleStepper.setMaxSpeed(nozzleSpeed);
+    Serial.println(nozzleSpeed);
+  }
+
   // when auger register is set to 0 run the auger continously at current speed. Else follow positioning mode
   if (mb.Hreg(AUGER_REG) == 0) {
-    augerStepper.setSpeed(augerSpeed);
+    augerStepper.setSpeed(-1 * augerSpeed);
     augerStepper.runSpeed();
   } else if (augerPos != mb.Hreg(AUGER_REG)) {
     augerPos = mb.Hreg(AUGER_REG);
@@ -109,15 +123,17 @@ void loop() {
     augerStepper.run();
   }
 
-  if (nozzlePos != mb.Hreg(NOZZLE_REG)) {
+  // when nozzle register is set to 0 run the nozzle continously at current speed, otherwise go to position
+  if (mb.Hreg(NOZZLE_REG) == 0) {
+    nozzleStepper.setSpeed(nozzleSpeed);
+    nozzleStepper.runSpeed();
+  } else if (nozzlePos != mb.Hreg(NOZZLE_REG)) {
     nozzlePos = mb.Hreg(NOZZLE_REG);
-    Serial.print("set nozzle orientation: ");
+    Serial.print("Moving nozzle pos: ");
     nozzleStepper.moveTo(nozzlePos);
     Serial.println(nozzlePos);
+    nozzleStepper.run();
   }
-  nozzleStepper.run();
 
   digitalWrite(ledPin, mb.Coil(LED_COIL));
-
-  //delay(10);
 }
